@@ -1,5 +1,5 @@
 //============================================================================
-//  Arcade: Super Glob
+//  Arcade: Lady Bug
 //
 //  Port to MiSTer
 //  Copyright (C) 2017 Sorgelig
