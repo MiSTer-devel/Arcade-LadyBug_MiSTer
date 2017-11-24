@@ -54,6 +54,10 @@ port (
 	CLK_IN       : in  std_logic; -- 20MHz
 	I_RESET      : in  std_logic;
 
+	dn_addr      : in  std_logic_vector(15 downto 0);
+	dn_data      : in  std_logic_vector(7 downto 0);
+	dn_wr        : in  std_logic;
+
 	-- VGA Interface ----------------------------------------------------------
 	O_VIDEO_R    : out std_logic_vector( 1 downto 0);
 	O_VIDEO_G    : out std_logic_vector( 1 downto 0);
@@ -122,6 +126,7 @@ architecture struct of ladybug is
 
 	signal but_chute_s     : std_logic_vector( 1 downto 0) := (others=>'0');
 
+	signal rom_cpu1_cs, rom_cpu2_cs, rom_cpu3_cs, rom_sprite_l_cs, rom_sprite_u_cs, rom_char_l_cs, rom_char_u_cs : std_logic;
 begin
 
 	O_PIXCE <= clk_en_5mhz_s;
@@ -134,7 +139,7 @@ begin
 	ext_res_s <= I_RESET;
 	ext_res_n_s <= not ext_res_s;
 	clk_20mhz_s <= CLK_IN;
-
+	
 	-----------------------------------------------------------------------------
 	-- Ladybug Machine
 	-----------------------------------------------------------------------------
@@ -182,53 +187,104 @@ begin
 	-----------------------------------------------------------------------------
 	-- Game ROMs
 	-----------------------------------------------------------------------------
-	inst_rom_spritel : entity work.rom_sprite_l
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_sprite_a_s,
-		DATA        => rom_sprite_d_s( 7 downto 0)
+	
+	rom_cpu1_cs     <= '1' when dn_addr(15 downto 13)="000" else '0';
+	rom_cpu2_cs     <= '1' when dn_addr(15 downto 13)="001" else '0';
+	rom_cpu3_cs     <= '1' when dn_addr(15 downto 13)="010" else '0';
+	rom_sprite_l_cs <= '1' when dn_addr(15 downto 12)=X"6"  else '0';
+	rom_sprite_u_cs <= '1' when dn_addr(15 downto 12)=X"7"  else '0';
+	rom_char_l_cs   <= '1' when dn_addr(15 downto 12)=X"8"  else '0';
+	rom_char_u_cs   <= '1' when dn_addr(15 downto 12)=X"9"  else '0';
+
+	inst_rom_spritel : work.dpram generic map (12,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_sprite_l_cs,
+		address_a => dn_addr(11 downto 0),
+		data_a    => dn_data,
+
+		clock_b   => clk_20mhz_s,
+		address_b => rom_sprite_a_s,
+		q_b       => rom_sprite_d_s( 7 downto 0)
 	);
 
-	inst_rom_spriteu : entity work.rom_sprite_u
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_sprite_a_s,
-		DATA        => rom_sprite_d_s(15 downto 8)
+	inst_rom_spriteu : work.dpram generic map (12,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_sprite_u_cs,
+		address_a => dn_addr(11 downto 0),
+		data_a    => dn_data,
+
+		clock_b   => clk_20mhz_s,
+		address_b => rom_sprite_a_s,
+		q_b       => rom_sprite_d_s( 15 downto 8)
 	);
 
-	inst_rom_charl : entity work.rom_char_l
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_char_a_s,
-		DATA        => rom_char_d_s( 7 downto 0)
+	inst_rom_charl : work.dpram generic map (12,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_char_l_cs,
+		address_a => dn_addr(11 downto 0),
+		data_a    => dn_data,
+
+		clock_b   => clk_20mhz_s,
+		address_b => rom_char_a_s,
+		q_b       => rom_char_d_s( 7 downto 0)
 	);
 
-	inst_rom_charu : entity work.rom_char_u
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_char_a_s,
-		DATA        => rom_char_d_s(15 downto 8)
+	inst_rom_charu : work.dpram generic map (12,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_char_u_cs,
+		address_a => dn_addr(11 downto 0),
+		data_a    => dn_data,
+
+		clock_b   => clk_20mhz_s,
+		address_b => rom_char_a_s,
+		q_b       => rom_char_d_s(15 downto 8)
 	);
 
-	inst_rom_cpu1 : entity work.rom_cpu1
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_cpu_a_s(12 downto 0),
-		DATA        => rom_cpu_d1
+	inst_rom_cpu1 : work.dpram generic map (13,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_cpu1_cs,
+		address_a => dn_addr(12 downto 0),
+		data_a    => dn_data,
+
+		clock_b   => clk_20mhz_s,
+		address_b => rom_cpu_a_s(12 downto 0),
+		q_b       => rom_cpu_d1
+	);
+	
+	inst_rom_cpu2 : work.dpram generic map (13,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_cpu2_cs,
+		address_a => dn_addr(12 downto 0),
+		data_a    => dn_data,
+
+		clock_b   => clk_20mhz_s,
+		address_b => rom_cpu_a_s(12 downto 0),
+		q_b       => rom_cpu_d2
 	);
 
-	inst_rom_cpu2 : entity work.rom_cpu2
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_cpu_a_s(12 downto 0),
-		DATA        => rom_cpu_d2
-	);
+	inst_rom_cpu3 : work.dpram generic map (13,8)
+	port map
+	(
+		clock_a   => clk_20mhz_s,
+		wren_a    => dn_wr and rom_cpu3_cs,
+		address_a => dn_addr(12 downto 0),
+		data_a    => dn_data,
 
-	inst_rom_cpu3 : entity work.rom_cpu3
-	port map (
-		CLK         => clk_20mhz_s,
-		ADDR        => rom_cpu_a_s(12 downto 0),
-		DATA        => rom_cpu_d3
+		clock_b   => clk_20mhz_s,
+		address_b => rom_cpu_a_s(12 downto 0),
+		q_b       => rom_cpu_d3
 	);
 
 	-----------------------------------------------------------------------------

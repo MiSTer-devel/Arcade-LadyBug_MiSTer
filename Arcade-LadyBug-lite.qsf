@@ -356,13 +356,6 @@ set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
 set_global_assignment -name CDF_FILE jtag_lite.cdf
 set_global_assignment -name QIP_FILE sys/sys.qip
 set_global_assignment -name QIP_FILE sys/sysmem.qip
-set_global_assignment -name VHDL_FILE ROM/rom_sprite_u.vhd
-set_global_assignment -name VHDL_FILE ROM/rom_sprite_l.vhd
-set_global_assignment -name VHDL_FILE ROM/rom_cpu3.vhd
-set_global_assignment -name VHDL_FILE ROM/rom_cpu2.vhd
-set_global_assignment -name VHDL_FILE ROM/rom_cpu1.vhd
-set_global_assignment -name VHDL_FILE ROM/rom_char_u.vhd
-set_global_assignment -name VHDL_FILE ROM/rom_char_l.vhd
 set_global_assignment -name VHDL_FILE ROM/prom_decrypt.vhd
 set_global_assignment -name VHDL_FILE ROM/prom_10_3.vhd
 set_global_assignment -name VHDL_FILE ROM/prom_10_2.vhd
