@@ -79,7 +79,9 @@ port (
 	but_up_s     : in  std_logic_vector( 1 downto 0);
 	but_down_s   : in  std_logic_vector( 1 downto 0);
 	but_left_s   : in  std_logic_vector( 1 downto 0);
-	but_right_s  : in  std_logic_vector( 1 downto 0)
+	but_right_s  : in  std_logic_vector( 1 downto 0);
+	dip_block_1_s: in  std_logic_vector( 7 downto 0)
+
 );
 end ladybug;
 
@@ -115,7 +117,7 @@ architecture struct of ladybug is
 
 	signal
 		dac_audio_s,
-		dip_block_1_s,
+		--dip_block_1_s,
 		dip_block_2_s       : std_logic_vector( 7 downto 0) := (others => '0');
 
 	signal ps2_scancode    : std_logic_vector( 9 downto 0) := (others => '0');
@@ -179,7 +181,7 @@ begin
 	-----------------------------------------------------------------------------
 	-- Building the DIP Switches - see file ladybug_dip_pack.vhd
 	-----------------------------------------------------------------------------
-	dip_block_1_s <= lb_dip_block_1_c; -- Lady Bug
+--	dip_block_1_s <= lb_dip_block_1_c; -- Lady Bug
 --	dip_block_1_s <= do_dip_block_1_c; -- Dorodon
 --	dip_block_1_s <= ca_dip_block_1_c; -- Cosmic Avenger
 	dip_block_2_s <= price_dip_block_2_c; -- Common for all games (coins per game pricing)
