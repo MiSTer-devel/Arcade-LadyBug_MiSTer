@@ -100,8 +100,6 @@ assign HDMI_ARY = status[1] ? 8'd9  : status[2] ? 8'd3 : 8'd4;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.LADYBG;;",
-	"F,rom;", // allow loading of alternate ROMs
-	"-;",
 	"O1,Aspect Ratio,Original,Wide;",
 	"O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
@@ -298,10 +296,19 @@ wire ce_vid;
 wire [1:0] r,g;
 wire [1:0] b;
 
+reg ce_pix;
+always @(posedge clk_sys) begin
+        reg [1:0] div;
+
+        div <= div + 1'd1;
+        ce_pix <= !div;
+end
+
+
 arcade_rotate_fx #(240,192,6,1) arcade_video
 (
         .*,
-        .ce_pix(ce_vid),
+        //.ce_pix(ce_vid),
         .clk_video(clk_sys),
 
         .RGB_in({r,g,b}),
