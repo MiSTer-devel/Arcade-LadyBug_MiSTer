@@ -100,8 +100,8 @@ assign HDMI_ARY = status[1] ? 8'd9  : status[2] ? 8'd3 : 8'd4;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.LADYBG;;",
-	"O1,Aspect Ratio,Original,Wide;",
-	"O2,Orientation,Vert,Horz;",
+	"H0O1,Aspect Ratio,Original,Wide;",
+	"H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"O89,Difficulty,Easy,Medium,Hard,Hardest;",
@@ -109,7 +109,8 @@ localparam CONF_STR = {
 	"OC,Cabinet,Upright,Cocktail;",	
 	"-;",
 	"R0,Reset;",
-	"J1,Start 1P,Start 2P;",
+	"J1,Start 1P,Start 2P,Coin;",
+	"jn,Start,Select,R;",
 	"V,v",`BUILD_DATE
 };
 /*
@@ -149,14 +150,15 @@ wire [7:0] m_dip = {~status[11],1'b1,status[12],1'b1,1'b1,1'b1,~status[9:8]};
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_sys;
+wire clk_sys,clk_40;
 wire pll_locked;
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.rst(0),
-	.outclk_0(clk_sys),
+	.outclk_0(clk_40),
+	.outclk_1(clk_sys), //20
 	.locked(pll_locked)
 );
 
@@ -165,6 +167,7 @@ pll pll
 wire [31:0] status;
 wire  [1:0] buttons;
 wire        forced_scandoubler;
+wire        direct_video;
 
 wire        ioctl_download;
 wire        ioctl_wr;
@@ -174,7 +177,8 @@ wire  [7:0] ioctl_dout;
 wire [10:0] ps2_key;
 
 wire [15:0] joystick_0,joystick_1;
-wire [15:0] joy = joystick_0 | joystick_1;
+wire [15:0] joy1 = joystick_0;
+wire [15:0] joy2 = joystick_1;
 
 wire [21:0] gamma_bus;
 
@@ -188,8 +192,10 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
+	.status_menumask(direct_video),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
+	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_wr(ioctl_wr),
@@ -256,39 +262,43 @@ reg btn_fire_2=0;
 reg btn_test=0;
 
 
-
+wire no_rotate = status[2] & ~direct_video  ;
 
 wire m_up,m_down,m_left,m_right;
 joyonedir jod
 (
-	clk_sys,
-	{
-		status[2] ? btn_left  | joy[1] : btn_up    | joy[3],
-		status[2] ? btn_right | joy[0] : btn_down  | joy[2],
-		status[2] ? btn_down  | joy[2] : btn_left  | joy[1],
-		status[2] ? btn_up    | joy[3] : btn_right | joy[0]
-	},
-	{m_up,m_down,m_left,m_right}
+        clk_sys,
+        1'b0,
+        {
+                no_rotate ? btn_left  | joy1[1] : btn_up    | joy1[3],
+                no_rotate ? btn_right | joy1[0] : btn_down  | joy1[2],
+                no_rotate ? btn_down  | joy1[2] : btn_left  | joy1[1],
+                no_rotate ? btn_up    | joy1[3] : btn_right | joy1[0]
+        },
+        {m_up,m_down,m_left,m_right}
 );
+
 wire m_up_2,m_down_2,m_left_2,m_right_2;
 joyonedir jod_2
 (
         clk_sys,
+        1'b0,
         {
-                status[2] ? btn_left_2  | joy[1] : btn_up_2    | joy[3],
-                status[2] ? btn_right_2 | joy[0] : btn_down_2  | joy[2],
-                status[2] ? btn_down_2  | joy[2] : btn_left_2  | joy[1],
-                status[2] ? btn_up_2    | joy[3] : btn_right_2 | joy[0]
+                no_rotate ? btn_left_2  | joy2[1] : btn_up_2    | joy2[3],
+                no_rotate ? btn_right_2 | joy2[0] : btn_down_2  | joy2[2],
+                no_rotate ? btn_down_2  | joy2[2] : btn_left_2  | joy2[1],
+                no_rotate ? btn_up_2    | joy2[3] : btn_right_2 | joy2[0]
         },
         {m_up_2,m_down_2,m_left_2,m_right_2}
 );
 
+
 wire m_fire    = btn_fire;
 wire m_fire_2  = btn_fire_2;
 
-wire m_start1 = btn_one_player  | joy[4];
-wire m_start2 = btn_two_players | joy[5];
-wire m_coin   = m_start1 | m_start2;
+wire m_start1 = btn_one_player  | joy1[4] | joy2[4];
+wire m_start2 = btn_two_players | joy1[5] | joy2[5];
+wire m_coin   = m_start1 | m_start2 | joy1[6] | joy2[6];
 
 wire hblank, vblank;
 wire hs, vs;
@@ -297,19 +307,18 @@ wire [1:0] r,g;
 wire [1:0] b;
 
 reg ce_pix;
-always @(posedge clk_sys) begin
-        reg [1:0] div;
+always @(posedge clk_40) begin
+        reg [2:0] div;
 
         div <= div + 1'd1;
         ce_pix <= !div;
 end
 
 
-arcade_rotate_fx #(240,192,6,1) arcade_video
+arcade_rotate_fx #(240,192,6) arcade_video
 (
         .*,
-        //.ce_pix(ce_vid),
-        .clk_video(clk_sys),
+        .clk_video(clk_40),
 
         .RGB_in({r,g,b}),
         .HBlank(hblank),
@@ -317,10 +326,9 @@ arcade_rotate_fx #(240,192,6,1) arcade_video
         .HSync(hs),
         .VSync(vs),
 
+	.rotate_ccw(1),
         .fx(status[5:3]),
-        .no_rotate(status[2])
 );
-//screen_rotate #(240,192,6,8,1) screen_rotate
 
 wire [7:0] audio;
 assign AUDIO_L = {audio, 8'd0};
@@ -361,11 +369,13 @@ ladybug ladybug
 
 endmodule
 
+
 module joyonedir
 (
-	input        clk,
-	input  [3:0] indir,
-	output [3:0] outdir
+        input        clk,
+        input        dis,
+        input  [3:0] indir,
+        output [3:0] outdir
 );
 
 reg  [3:0] mask = 0;
@@ -375,14 +385,17 @@ wire [3:0] innew = in1 & ~in2;
 assign outdir = in1 & mask;
 
 always @(posedge clk) begin
-	
-	in1 <= indir;
-	in2 <= in1;
-	
-	if(innew[0]) mask <= 1;
-	if(innew[1]) mask <= 2;
-	if(innew[2]) mask <= 4;
-	if(innew[3]) mask <= 8;
+
+        in1 <= indir;
+        in2 <= in1;
+
+        if(innew[0]) mask <= 1;
+        if(innew[1]) mask <= 2;
+        if(innew[2]) mask <= 4;
+        if(innew[3]) mask <= 8;
+
+        if(!(indir & mask) || dis) mask <= '1;
 end
+
 
 endmodule
