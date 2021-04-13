@@ -37,4 +37,5 @@ set_global_assignment -name VHDL_FILE rtl/ladybug_chute.vhd
 set_global_assignment -name VHDL_FILE rtl/ladybug_char.vhd
 set_global_assignment -name VHDL_FILE rtl/ladybug_addr_dec.vhd
 set_global_assignment -name VHDL_FILE rtl/ladybug.vhd
+set_global_assignment -name VERILOG_FILE rtl/hiscore.v
 set_global_assignment -name SYSTEMVERILOG_FILE "Arcade-LadyBug.sv"
