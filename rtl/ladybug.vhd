@@ -80,7 +80,15 @@ port (
 	but_down_s   : in  std_logic_vector( 1 downto 0);
 	but_left_s   : in  std_logic_vector( 1 downto 0);
 	but_right_s  : in  std_logic_vector( 1 downto 0);
-	dip_block_1_s: in  std_logic_vector( 7 downto 0)
+	dip_block_1_s: in  std_logic_vector( 7 downto 0);
+
+	pause        : in  std_logic;
+
+	hs_address   : in  std_logic_vector(15 downto 0);
+	hs_data_out  : out std_logic_vector(7 downto 0);
+	hs_data_in   : in  std_logic_vector(7 downto 0);
+	hs_write     : in  std_logic;
+	hs_access    : in  std_logic
 
 );
 end ladybug;
@@ -175,7 +183,13 @@ begin
 		rom_char_a_o      => rom_char_a_s,
 		rom_char_d_i      => rom_char_d_s,
 		rom_sprite_a_o    => rom_sprite_a_s,
-		rom_sprite_d_i    => rom_sprite_d_s
+		rom_sprite_d_i    => rom_sprite_d_s,
+		pause             => pause,
+		hs_address        => hs_address,
+		hs_data_in        => hs_data_in,
+		hs_data_out       => hs_data_out,
+		hs_write          => hs_write,
+		hs_access         => hs_access
 	);
 
 	-----------------------------------------------------------------------------

@@ -76,7 +76,14 @@ entity ladybug_cpu_unit is
     cs10_n_o       : out std_logic;
     cs11_n_o       : out std_logic;
     cs12_n_o       : out std_logic;
-    cs13_n_o       : out std_logic
+    cs13_n_o       : out std_logic;
+
+    pause          : in  std_logic;
+
+    hs_address     : in  std_logic_vector(15 downto 0);
+    hs_data_out    : out std_logic_vector(7 downto 0);
+    hs_data_in     : in  std_logic_vector(7 downto 0);
+    hs_write       : in  std_logic
   );
 
 end ladybug_cpu_unit;
@@ -126,7 +133,7 @@ begin
     port map (
       RESET_n    => res_n_i,
       CLK_n      => clk_20mhz_i,
-      CLK_EN_SYS => t80_clk_en_s,
+      CLK_EN_SYS => t80_clk_en_s and not pause,
       WAIT_n     => wait_n_s,
       INT_n      => int_n_s,
       NMI_n      => nmi_n_s,
@@ -151,13 +158,21 @@ begin
   -----------------------------------------------------------------------------
 	cpu_ram_b : entity work.ladybug_cpu_ram
 	port map (
-		clk_i    => clk_20mhz_i,
-		clk_en_i => clk_en_4mhz_i,
-		a_i      => a_s(11 downto 0),
-		cs_n_i   => cs_n_s(6),
-		we_n_i   => wr_n_s,
-		d_i      => d_from_cpu_s,
-		d_o      => d_from_ram_s
+		clk1_i    => clk_20mhz_i,
+		clk_en1_i => clk_en_4mhz_i,
+		a1_i      => a_s(11 downto 0),
+		cs1_n_i   => cs_n_s(6),
+		we1_n_i   => wr_n_s,
+		d1_i      => d_from_cpu_s,
+		d1_o      => d_from_ram_s,
+
+		clk2_i    => clk_20mhz_i,
+		clk_en2_i => '1',
+		a2_i      => hs_address(11 downto 0),
+		cs2_n_i   => '0',
+		we2_n_i   => not hs_write,
+		d2_i      => hs_data_in,
+		d2_o      => hs_data_out
 	);
 
   -----------------------------------------------------------------------------

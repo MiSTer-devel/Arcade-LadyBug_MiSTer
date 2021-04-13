@@ -61,41 +61,59 @@ use ieee.std_logic_1164.all;
 entity ladybug_char_ram is
 
   port (
-    clk_i    : in  std_logic;
-    clk_en_i : in  std_logic;
-    a_i      : in  std_logic_vector(9 downto 0);
-    cs_n_i   : in  std_logic;
-    we_n_i   : in  std_logic;
-    d_i      : in  std_logic_vector( 7 downto 0);
-    d_o      : out std_logic_vector( 7 downto 0)
+    clk1_i    : in  std_logic;
+    clk_en1_i : in  std_logic;
+    a1_i      : in  std_logic_vector( 9 downto 0);
+    cs1_n_i   : in  std_logic;
+    we1_n_i   : in  std_logic;
+    d1_i      : in  std_logic_vector( 7 downto 0);
+    d1_o      : out std_logic_vector( 7 downto 0);
+
+    clk2_i    : in  std_logic;
+    clk_en2_i : in  std_logic;
+    a2_i      : in  std_logic_vector( 9 downto 0);
+    cs2_n_i   : in  std_logic;
+    we2_n_i   : in  std_logic;
+    d2_i      : in  std_logic_vector( 7 downto 0);
+    d2_o      : out std_logic_vector( 7 downto 0)
   );
 
 end ladybug_char_ram;
 
 architecture struct of ladybug_char_ram is
 
-  signal d_s   : std_logic_vector(7 downto 0);
-  signal we_s  : std_logic;
+  signal d1_s  : std_logic_vector(7 downto 0);
+  signal we1_s : std_logic;
+  signal d2_s  : std_logic_vector(7 downto 0);
+  signal we2_s : std_logic;
 
 begin
 
   -- generate write enable at same clock edge as controller logic
   -- this might suppress intermediate writes when address bus changes
   -- during write cycle
-	we_s <= not cs_n_i and not we_n_i and clk_en_i;
+	we1_s <= not cs1_n_i and not we1_n_i and clk_en1_i;
+	we2_s <= not cs2_n_i and not we2_n_i and clk_en2_i;
 
-	ram_inst: work.spram generic map(10,8)
+	ram1_inst: work.dpram generic map(10,8)
 	port map
 	(
-		address		=> a_i,
-		clock			=> clk_i,
-		data			=> d_i,
-		wren			=> we_s,
-		q				=> d_s
+		address_a		=> a1_i,
+		clock_a			=> clk1_i,
+		data_a			=> d1_i,
+		wren_a			=> we1_s,
+		q_a				=> d1_s,
+
+		address_b		=> a2_i,
+		clock_b			=> clk2_i,
+		data_b			=> d2_i,
+		wren_b			=> we2_s,
+		q_b				=> d2_s
 	);
 
-  -- gate the data output for and'ing on CPU bus
-  d_o <= d_s when cs_n_i = '0' else (others => '1');
+	-- gate the data output for and'ing on CPU bus
+	d1_o <= d1_s when cs1_n_i = '0' else (others => '1');
+	d2_o <= d2_s when cs2_n_i = '0' else (others => '1');
 
 end struct;
 
@@ -301,40 +319,58 @@ use ieee.std_logic_1164.all;
 entity ladybug_cpu_ram is
 
   port (
-    clk_i    : in  std_logic;
-    clk_en_i : in  std_logic;
-    a_i      : in  std_logic_vector(11 downto 0);
-    cs_n_i   : in  std_logic;
-    we_n_i   : in  std_logic;
-    d_i      : in  std_logic_vector( 7 downto 0);
-    d_o      : out std_logic_vector( 7 downto 0)
+    clk1_i    : in  std_logic;
+    clk_en1_i : in  std_logic;
+    a1_i      : in  std_logic_vector(11 downto 0);
+    cs1_n_i   : in  std_logic;
+    we1_n_i   : in  std_logic;
+    d1_i      : in  std_logic_vector( 7 downto 0);
+    d1_o      : out std_logic_vector( 7 downto 0);
+
+    clk2_i    : in  std_logic;
+    clk_en2_i : in  std_logic;
+    a2_i      : in  std_logic_vector(11 downto 0);
+    cs2_n_i   : in  std_logic;
+    we2_n_i   : in  std_logic;
+    d2_i      : in  std_logic_vector( 7 downto 0);
+    d2_o      : out std_logic_vector( 7 downto 0)
   );
 
 end ladybug_cpu_ram;
 
 architecture struct of ladybug_cpu_ram is
 
-  signal d_s  : std_logic_vector(7 downto 0);
-  signal we_s : std_logic;
+  signal d1_s  : std_logic_vector(7 downto 0);
+  signal we1_s : std_logic;
+  signal d2_s  : std_logic_vector(7 downto 0);
+  signal we2_s : std_logic;
 
 begin
 
   -- generate write enable at same clock edge as controller logic
   -- this might suppress intermediate writes when address bus changes
   -- during write cycle
-	we_s <= not cs_n_i and not we_n_i and clk_en_i;
+	we1_s <= not cs1_n_i and not we1_n_i and clk_en1_i;
+	we2_s <= not cs2_n_i and not we2_n_i and clk_en2_i;
 
-	ram1_inst: work.spram generic map(12,8)
+	ram1_inst: work.dpram generic map(12,8)
 	port map
 	(
-		address		=> a_i,
-		clock			=> clk_i,
-		data			=> d_i,
-		wren			=> we_s,
-		q				=> d_s
+		address_a		=> a1_i,
+		clock_a			=> clk1_i,
+		data_a			=> d1_i,
+		wren_a			=> we1_s,
+		q_a				=> d1_s,
+
+		address_b		=> a2_i,
+		clock_b			=> clk2_i,
+		data_b			=> d2_i,
+		wren_b			=> we2_s,
+		q_b				=> d2_s
 	);
 
 	-- gate the data output for and'ing on CPU bus
-	d_o <= d_s when cs_n_i = '0' else (others => '1');
+	d1_o <= d1_s when cs1_n_i = '0' else (others => '1');
+	d2_o <= d2_s when cs2_n_i = '0' else (others => '1');
 
 end struct;

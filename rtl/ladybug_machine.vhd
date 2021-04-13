@@ -89,7 +89,15 @@ entity ladybug_machine is
     rom_char_d_i      : in  std_logic_vector(15 downto 0);
     -- Sprite ROM Interface ---------------------------------------------------
     rom_sprite_a_o    : out std_logic_vector(11 downto 0);
-    rom_sprite_d_i    : in  std_logic_vector(15 downto 0)
+    rom_sprite_d_i    : in  std_logic_vector(15 downto 0);
+
+    pause             : in  std_logic;
+    -- Hiscore 
+    hs_address        : in  std_logic_vector(15 downto 0);
+    hs_data_out       : out std_logic_vector(7 downto 0);
+    hs_data_in        : in  std_logic_vector(7 downto 0);
+    hs_write          : in  std_logic;
+    hs_access         : in  std_logic
   );
 
 
@@ -130,6 +138,11 @@ architecture struct of ladybug_machine is
          gpio_in2_s,
          gpio_in3_s,
          gpio_extra_s   : std_logic_vector( 7 downto 0);
+
+  signal hs_cs_cpu        : std_logic;
+  signal hs_cs_vram       : std_logic;
+  signal hs_data_out_cpu  : std_logic_vector( 7 downto 0);
+  signal hs_data_out_vram : std_logic_vector( 7 downto 0);
 
 begin
 
@@ -199,6 +212,12 @@ begin
                   '1'                  &
                   '1';
 
+  -----------------------------------------------------------------------------
+  -- Hiscore mux
+  -----------------------------------------------------------------------------
+  hs_cs_cpu    <= '1' when hs_address(15 downto 12)="0110" else '0';
+  hs_cs_vram   <= '1' when hs_address(15 downto 12)="1101" else '0';
+  hs_data_out  <= hs_data_out_cpu when hs_cs_cpu='1' else hs_data_out_vram;
 
   -----------------------------------------------------------------------------
   -- CPU Unit
@@ -229,7 +248,12 @@ begin
       cs10_n_o       => cs10_n_s,
       cs11_n_o       => cs11_n_s,
       cs12_n_o       => cs12_n_s,
-      cs13_n_o       => cs13_n_s
+      cs13_n_o       => cs13_n_s,
+      pause          => pause,
+      hs_address     => hs_address,
+      hs_data_in     => hs_data_in,
+      hs_data_out    => hs_data_out_cpu,
+      hs_write       => hs_write and hs_cs_cpu
     );
 
   -----------------------------------------------------------------------------
@@ -273,7 +297,12 @@ begin
       rom_char_a_o     => rom_char_a_o,
       rom_char_d_i     => rom_char_d_i,
       rom_sprite_a_o   => rom_sprite_a_o,
-      rom_sprite_d_i   => rom_sprite_d_i
+      rom_sprite_d_i   => rom_sprite_d_i,
+      pause            => pause,
+      hs_address       => hs_address,
+      hs_data_in       => hs_data_in,
+      hs_data_out      => hs_data_out_vram,
+      hs_write         => hs_write and hs_cs_vram
     );
 
   -----------------------------------------------------------------------------
@@ -282,7 +311,7 @@ begin
   sound_b : entity work.ladybug_sound_unit
     port map (
       clk_20mhz_i    => clk_20mhz_i,
-      clk_en_4mhz_i  => clk_en_4mhz_s,
+      clk_en_4mhz_i  => clk_en_4mhz_s and not pause,
       por_n_i        => por_n_s,
       cs11_n_i       => cs11_n_s,
       cs12_n_i       => cs12_n_s,

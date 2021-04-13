@@ -89,7 +89,12 @@ entity ladybug_char is
 	 hblank_o      : out std_logic;
     -- Character ROM Interface ------------------------------------------------
     rom_char_a_o  : out std_logic_vector(11 downto 0);
-    rom_char_d_i  : in  std_logic_vector(15 downto 0)
+    rom_char_d_i  : in  std_logic_vector(15 downto 0);
+
+    hs_address     : in  std_logic_vector(15 downto 0);
+    hs_data_out    : out std_logic_vector(7 downto 0);
+    hs_data_in     : in  std_logic_vector(7 downto 0);
+    hs_write       : in  std_logic
   );
 
 end ladybug_char;
@@ -553,13 +558,21 @@ begin
   -----------------------------------------------------------------------------
   char_ram_b : entity work.ladybug_char_ram
     port map (
-      clk_i    => clk_20mhz_i,
-      clk_en_i => clk_en_4mhz_i,
-      a_i      => ram_addr_s,
-      cs_n_i   => char_ram_cs_n_s,
-      we_n_i   => char_ram_we_n_s,
-      d_i      => d_from_cpu_i,
-      d_o      => d_from_char_ram_s
+      clk1_i    => clk_20mhz_i,
+      clk_en1_i => clk_en_4mhz_i,
+      a1_i      => ram_addr_s,
+      cs1_n_i   => char_ram_cs_n_s,
+      we1_n_i   => char_ram_we_n_s,
+      d1_i      => d_from_cpu_i,
+      d1_o      => d_from_char_ram_s,
+
+      clk2_i    => clk_20mhz_i,
+      clk_en2_i => '1',
+      a2_i      => hs_address(9 downto 0),
+      cs2_n_i   => '0',
+      we2_n_i   => not hs_write,
+      d2_i      => hs_data_in,
+      d2_o      => hs_data_out
     );
   -----------------------------------------------------------------------------
   -- The color RAM
