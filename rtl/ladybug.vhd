@@ -57,6 +57,7 @@ port (
 	dn_addr      : in  std_logic_vector(15 downto 0);
 	dn_data      : in  std_logic_vector(7 downto 0);
 	dn_wr        : in  std_logic;
+	dn_index     : in  std_logic_vector(7 downto 0);
 
 	-- VGA Interface ----------------------------------------------------------
 	O_VIDEO_R    : out std_logic_vector( 1 downto 0);
@@ -137,6 +138,8 @@ architecture struct of ladybug is
 	signal but_chute_s     : std_logic_vector( 1 downto 0) := (others=>'0');
 
 	signal rom_cpu1_cs, rom_cpu2_cs, rom_cpu3_cs, rom_sprite_l_cs, rom_sprite_u_cs, rom_char_l_cs, rom_char_u_cs : std_logic;
+
+	signal rom_download    : std_logic;
 begin
 
 	O_PIXCE <= clk_en_5mhz_s;
@@ -189,7 +192,11 @@ begin
 		hs_data_in        => hs_data_in,
 		hs_data_out       => hs_data_out,
 		hs_write          => hs_write,
-		hs_access         => hs_access
+		hs_access         => hs_access,
+		dn_addr           => dn_addr,
+		dn_data           => dn_data,
+		dn_wr             => dn_wr,
+		dn_index          => dn_index
 	);
 
 	-----------------------------------------------------------------------------
@@ -211,12 +218,13 @@ begin
 	rom_sprite_u_cs <= '1' when dn_addr(15 downto 12)=X"7"  else '0';
 	rom_char_l_cs   <= '1' when dn_addr(15 downto 12)=X"8"  else '0';
 	rom_char_u_cs   <= '1' when dn_addr(15 downto 12)=X"9"  else '0';
+	rom_download    <= '1' when dn_wr = '1' and dn_index(7 downto 0) = "00000000" else '0';
 
 	inst_rom_spritel : work.dpram generic map (12,8)
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_sprite_l_cs,
+		wren_a    => rom_download and rom_sprite_l_cs,
 		address_a => dn_addr(11 downto 0),
 		data_a    => dn_data,
 
@@ -229,7 +237,7 @@ begin
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_sprite_u_cs,
+		wren_a    => rom_download and rom_sprite_u_cs,
 		address_a => dn_addr(11 downto 0),
 		data_a    => dn_data,
 
@@ -242,7 +250,7 @@ begin
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_char_l_cs,
+		wren_a    => rom_download and rom_char_l_cs,
 		address_a => dn_addr(11 downto 0),
 		data_a    => dn_data,
 
@@ -255,7 +263,7 @@ begin
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_char_u_cs,
+		wren_a    => rom_download and rom_char_u_cs,
 		address_a => dn_addr(11 downto 0),
 		data_a    => dn_data,
 
@@ -268,7 +276,7 @@ begin
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_cpu1_cs,
+		wren_a    => rom_download and rom_cpu1_cs,
 		address_a => dn_addr(12 downto 0),
 		data_a    => dn_data,
 
@@ -281,7 +289,7 @@ begin
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_cpu2_cs,
+		wren_a    => rom_download and rom_cpu2_cs,
 		address_a => dn_addr(12 downto 0),
 		data_a    => dn_data,
 
@@ -294,7 +302,7 @@ begin
 	port map
 	(
 		clock_a   => clk_20mhz_s,
-		wren_a    => dn_wr and rom_cpu3_cs,
+		wren_a    => rom_download and rom_cpu3_cs,
 		address_a => dn_addr(12 downto 0),
 		data_a    => dn_data,
 

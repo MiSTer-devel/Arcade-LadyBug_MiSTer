@@ -91,6 +91,11 @@ entity ladybug_machine is
     rom_sprite_a_o    : out std_logic_vector(11 downto 0);
     rom_sprite_d_i    : in  std_logic_vector(15 downto 0);
 
+    dn_addr           : in  std_logic_vector(15 downto 0);
+    dn_data           : in  std_logic_vector(7 downto 0);
+    dn_wr             : in  std_logic;
+    dn_index          : in  std_logic_vector(7 downto 0);
+
     pause             : in  std_logic;
     -- Hiscore 
     hs_address        : in  std_logic_vector(15 downto 0);
@@ -253,7 +258,11 @@ begin
       hs_address     => hs_address,
       hs_data_in     => hs_data_in,
       hs_data_out    => hs_data_out_cpu,
-      hs_write       => hs_write and hs_cs_cpu
+      hs_write       => hs_write and hs_cs_cpu,
+      dn_addr        => dn_addr,
+      dn_data        => dn_data,
+      dn_wr          => dn_wr,
+      dn_index       => dn_index
     );
 
   -----------------------------------------------------------------------------
@@ -302,7 +311,11 @@ begin
       hs_address       => hs_address,
       hs_data_in       => hs_data_in,
       hs_data_out      => hs_data_out_vram,
-      hs_write         => hs_write and hs_cs_vram
+      hs_write         => hs_write and hs_cs_vram,
+      dn_addr          => dn_addr,
+      dn_data          => dn_data,
+      dn_wr            => dn_wr,
+      dn_index         => dn_index
     );
 
   -----------------------------------------------------------------------------
