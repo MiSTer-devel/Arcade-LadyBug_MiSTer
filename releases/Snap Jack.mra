@@ -31,7 +31,7 @@
 		<part crc="ff2011c7" name="sj9.f7"/>
 		<part crc="f097babb" name="sj0.h7"/>
 	</rom>
-	<rom index="2" zip="snapjack.zip" md5="none">
+	<rom index="2" zip="snapjack.zip" md5="e8003cb15596c20d9a0456d6f9c36689">
 		<part crc="5b16fbd2" name="10-2.k1"/>
 		<part crc="cbbd9dd1" name="10-1.f4"/>
 		<part crc="27fa3a50" name="10-3.c4"/>

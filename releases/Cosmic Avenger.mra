@@ -30,7 +30,7 @@
 		<part crc="63357785" name="9.f7"/>
 		<part crc="52ad1133" name="0.h7"/>
 	</rom>
-	<rom index="2" zip="cavenger.zip" md5="none">
+	<rom index="2" zip="cavenger.zip" md5="121daaf5de7cca6f0855097fa2571581">
 		<part crc="d736b8de" name="10-1.f4"/>
 		<part crc="42a24dd5" name="10-2.k1"/>
 		<part crc="27fa3a50" name="10-3.c4"/>

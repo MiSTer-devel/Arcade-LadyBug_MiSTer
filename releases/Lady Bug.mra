@@ -33,7 +33,7 @@
 		<part crc="77b1da1e" name="l9.f7"/>
 		<part crc="aa82e00b" name="l0.h7"/>
 	</rom>
-	<rom index="2" zip="ladybug.zip" md5="none">
+	<rom index="2" zip="ladybug.zip" md5="0a1fac7e0e66624d5cb8836f16da9310">
 		<part crc="40640d8f" name="10-1.f4"/>
 		<part crc="df091e52" name="10-2.k1"/>
 		<part crc="27fa3a50" name="10-3.c4"/>

@@ -29,7 +29,7 @@
 		<part crc="5eee2b85" name="dorodon.5"/>
 		<part crc="395ac25a" name="dorodon.6"/>
 	</rom>
-	<rom index="2" zip="dorodon.zip" md5="none">
+	<rom index="2" zip="dorodon.zip" md5="535617ce1663c1a933777909b9ee0f2d">
 		<part crc="3f209be4" name="dorodon.bp1"/>
 		<part crc="8fcf0bc8" name="dorodon.bp0"/>
 		<part crc="27fa3a50" name="dorodon.bp2"/>
