@@ -193,61 +193,39 @@ assign FB_FORCE_BLANK = '0;
 
 wire [1:0] ar = status[20:19];
 
-assign VIDEO_ARX = (!ar) ? ((status[2] ) ? 8'd4 : 8'd3) : (ar - 1'd1);
-assign VIDEO_ARY = (!ar) ? ((status[2] ) ? 8'd3 : 8'd4) : 12'd0;
+assign VIDEO_ARX = (!ar) ? ((status[2] | landscape) ? 8'd4 : 8'd3) : (ar - 1'd1);
+assign VIDEO_ARY = (!ar) ? ((status[2] | landscape) ? 8'd3 : 8'd4) : 12'd0;
 
 
 `include "build_id.v" 
 localparam CONF_STR = {
 	"A.LADYBG;;",
 	"H0OJK,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"H0O2,Orientation,Vert,Horz;",
+	"H1H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
-	"O89,Difficulty,Easy,Medium,Hard,Hardest;",
-	"OB,Lives,3,5;",
-	"OC,Cabinet,Upright,Cocktail;",
-	"O6,Pause when OSD is open,On,Off;",
+	"P1,Pause options;",
+	"P1OP,Pause when OSD is open,On,Off;",
+	"P1OQ,Dim video after 10s,On,Off;",
+	"-;",
+	"DIP;",
 	"-;",
 	"R0,Reset;",
-	"J1,Start 1P,Start 2P,Coin,Pause;",
-	"jn,Start,Select,R,L;",
+	"J1,Fire,Bomb,Start 1P,Start 2P,Coin,Pause;",
+	"jn,A,B,Start,Select,R,L;",
 	"V,v",`BUILD_DATE
 };
-/*
-    -- Lives ------------------------------------------------------------------
-    -- 0 = 5 Lives
-    -- 1 = 3 Lives
-    '0' &
-    -- Free Play --------------------------------------------------------------
-    -- 0 = Free Play
-    -- 1 = No Free Play
-    '1' &
-    -- Cabinet ----------------------------------------------------------------
-    -- 0 = Upright
-    -- 1 = Cocktail
-    '0' &
-    -- Screen Freeze ----------------------------------------------------------
-    -- 0 = Freeze
-    -- 1 = No Freeze
-    '1' &
-    -- Rack Test (Cheat) ------------------------------------------------------
-    -- 0 = On
-    -- 1 = Off
-    '1' &
-    -- High Score Initials ----------------------------------------------------
-    -- 0 = 3-Letter Initials
-    -- 1 = 10-Letter Initials
-    '1' &
-    -- Difficulty -------------------------------------------------------------
-    -- 11 = Easy
-    -- 10 = Medium
-    -- 01 = Hard
-    -- 00 = Hardest
-    "10";
-*/
-wire [7:0] m_dip = {~status[11],1'b1,status[12],1'b1,1'b1,1'b1,~status[9:8]};
 
+// Read DIPs from MRA
+reg [7:0] m_dip[8];	// Active-LOW
+always @(posedge clk_sys) if(ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) m_dip[ioctl_addr[2:0]] <= ioctl_dout;
+
+// Read game index from MRA
+localparam mod_ladybug			= 0;
+localparam mod_snapjack			= 1;
+localparam mod_cosmicavenger	= 2;
+reg [7:0] mod = 0;
+always @(posedge clk_sys) if (ioctl_wr & (ioctl_index==1)) mod <= ioctl_dout;
 
 ////////////////////   CLOCKS   ///////////////////
 
@@ -278,9 +256,7 @@ wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
 wire  [7:0] ioctl_din;
 
-wire [15:0] joystick_0,joystick_1;
-wire [15:0] joy1 = joystick_0;
-wire [15:0] joy2 = joystick_1;
+wire [15:0] joy1,joy2;
 
 wire [21:0] gamma_bus;
 
@@ -294,7 +270,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask(direct_video),
+	.status_menumask({landscape,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
@@ -307,86 +283,84 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
 
-	.joystick_0(joystick_0),
-	.joystick_1(joystick_1)
+	.joystick_0(joy1),
+	.joystick_1(joy2)
 );
 
 
-wire no_rotate = status[2] | direct_video  ;
+wire m_up		= joy1[3];
+wire m_down		= joy1[2];
+wire m_left		= joy1[1];
+wire m_right	= joy1[0];
+wire m_fire		= joy1[4];
+wire m_bomb		= joy1[5];
+wire m_up_2		= joy2[3];
+wire m_down_2	= joy2[2];
+wire m_left_2	= joy2[1];
+wire m_right_2	= joy2[0];
+wire m_fire_2	= joy2[5];
+wire m_bomb_2	= joy2[6];
+wire m_start1	= joy1[6] | joy2[6];
+wire m_start2	= joy1[7] | joy2[7];
+wire m_coin		= joy1[8] | joy2[8];
+wire m_pause	= joy1[9] | joy2[9];
+reg [1:0] but_up_s;
+reg [1:0] but_down_s;
+reg [1:0] but_left_s;
+reg [1:0] but_right_s;
 
-wire m_up,m_down,m_left,m_right;
-joyonedir jod
-(
-        clk_sys,
-        1'b0,
-        {
-                 joy1[3],
-                 joy1[2],
-                 joy1[1],
-                 joy1[0]
-        },
-        {m_up,m_down,m_left,m_right}
-);
+// One-directional control generators for Lady Bug
+wire [3:0] m_joyod_1;
+wire [3:0] m_joyod_2;
+joyonedir jod_1(clk_sys,1'b0,{m_up,m_down,m_left,m_right},m_joyod_1);
+joyonedir jod_2(clk_sys,1'b0,{m_up_2,m_down_2,m_left_2,m_right_2},m_joyod_2);
 
-wire m_up_2,m_down_2,m_left_2,m_right_2;
-joyonedir jod_2
-(
-        clk_sys,
-        1'b0,
-        {
-                 joy2[3],
-                 joy2[2],
-                 joy2[1],
-                 joy2[0]
-        },
-        {m_up_2,m_down_2,m_left_2,m_right_2}
-);
+// Set game specific options
+reg landscape;
+always @(*) begin
+	landscape <= 1'b0;
+	but_up_s		<= {m_up_2,m_up};
+	but_down_s	<= {m_down_2,m_down};
+	but_left_s	<= {m_left_2,m_left};
+	but_right_s	<= {m_right_2,m_right};
 
-
-wire m_fire    = 1'b0;
-wire m_fire_2  = 1'b0;
-
-wire m_start1 = joy1[4] | joy2[4];
-wire m_start2 = joy1[5] | joy2[5];
-wire m_coin   = joy1[6] | joy2[6];
-wire m_pause  = joy1[7] | joy2[7];
-
-// PAUSE SYSTEM
-reg				pause;									// Pause signal (active-high)
-reg				pause_toggle = 1'b0;					// User paused (active-high)
-reg [31:0]		pause_timer;							// Time since pause
-reg [31:0]		pause_timer_dim = 32'hBEBC200;	// Time until screen dim (10 seconds @ 20Mhz)
-reg 				dim_video;								// Dim video output (active-high)
-
-// Pause when highscore module requires access, user has pressed pause, or OSD is open and option is set
-assign pause = hs_access | pause_toggle | (OSD_STATUS && ~status[6]);
-assign dim_video = (pause_timer >= pause_timer_dim) ? 1'b1 : 1'b0;
-
-always @(posedge clk_sys) begin
-	reg old_pause;
-	old_pause <= m_pause;
-	if(~old_pause & m_pause) pause_toggle <= ~pause_toggle;
-	if(pause)
-	begin
-		if(reset) pause_toggle <= 0;
-		if(pause_timer<pause_timer_dim)
-		begin
-			pause_timer <= pause_timer + 1'b1;
-		end
-	end
-	else
-	begin
-		pause_timer <= 1'b0;
-	end
+	case (mod)
+		mod_ladybug:
+			begin
+				but_up_s		<= {m_joyod_2[3],m_joyod_1[3]};
+				but_down_s	<= {m_joyod_2[2],m_joyod_1[2]};
+				but_left_s	<= {m_joyod_2[1],m_joyod_1[1]};
+				but_right_s	<= {m_joyod_2[0],m_joyod_1[0]};
+			end
+		mod_snapjack:
+			begin
+				landscape	<= 1'b1;
+			end
+		mod_cosmicavenger:
+			begin
+				landscape	<= 1'b1;
+			end
+		default: ;
+	endcase
 end
 
+wire no_rotate = status[2] | direct_video | landscape;
+
+
+// PAUSE SYSTEM
+wire				pause_cpu;
+wire [5:0]		rgb_out;
+pause #(2,2,2,20) pause (
+	.*,
+	.user_button(m_pause),
+	.pause_request(hs_pause),
+	.options(~status[26:25])
+);
 
 wire hblank, vblank;
 wire hs, vs;
 wire ce_vid;
-wire [1:0] r,g;
-wire [1:0] b;
-wire [5:0] rgb_out = dim_video ? {r >> 1,g >> 1, b >> 1} : {r,g,b};
+wire [1:0] r,g, b;
 
 reg ce_pix;
 always @(posedge clk_40) begin
@@ -418,7 +392,7 @@ assign AUDIO_L = {audio, 8'd0};
 assign AUDIO_R = AUDIO_L;
 assign AUDIO_S = 1;
 
-wire rom_download = ioctl_download & !ioctl_index;
+wire rom_download = ioctl_download & (ioctl_index==2'd1|| ioctl_index==2'd2);
 wire reset = RESET | status[0] | buttons[1] | rom_download;
 
 ladybug ladybug
@@ -437,22 +411,23 @@ ladybug ladybug
 
 	.dn_addr(ioctl_addr[15:0]),
 	.dn_data(ioctl_dout),
-	.dn_wr(ioctl_wr & rom_download),
+	.dn_wr(ioctl_wr),
+	.dn_index(ioctl_index),
 
 	.O_AUDIO(audio),
 	
 	.but_coin_s(~{1'b0,m_coin}),
 	.but_fire_s(~{m_fire_2,m_fire}),
-	.but_bomb_s(~{1'b0,1'b0}),
+	.but_bomb_s(~{m_bomb_2,m_bomb}),
 	.but_tilt_s(~{1'b0,1'b0}),
 	.but_select_s(~{m_start2,m_start1}),
-	.but_up_s(~{m_up_2,m_up}),
-	.but_down_s(~{m_down_2,m_down}),
-	.but_left_s(~{m_left_2,m_left}),
-	.but_right_s(~{m_right_2,m_right}),
-	.dip_block_1_s(m_dip),
+	.but_up_s(~but_up_s),
+	.but_down_s(~but_down_s),
+	.but_left_s(~but_left_s),
+	.but_right_s(~but_right_s),
+	.dip_block_1_s(~m_dip[0]),
 
-	.pause(pause),
+	.pause(pause_cpu),
 
 	.hs_address(hs_address),
 	.hs_data_out(ioctl_din),
@@ -468,6 +443,7 @@ wire [15:0]hs_address;
 wire [7:0]hs_data_in;
 wire hs_write;
 wire hs_access;
+wire hs_pause;
 
 hiscore #(
 	.HS_ADDRESSWIDTH(16),
@@ -486,7 +462,8 @@ hiscore #(
 	.ram_address(hs_address),
 	.data_to_ram(hs_data_in),
 	.ram_write(hs_write),
-	.ram_access(hs_access)
+	.ram_access(hs_access),
+	.pause_cpu(hs_pause)
 );
 
 endmodule

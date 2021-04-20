@@ -57,7 +57,11 @@ entity ladybug_rgb is
     sig_i         : in  std_logic_vector(4 downto 1);
     rgb_r_o       : out std_logic_vector(1 downto 0);
     rgb_g_o       : out std_logic_vector(1 downto 0);
-    rgb_b_o       : out std_logic_vector(1 downto 0)
+    rgb_b_o       : out std_logic_vector(1 downto 0);
+    dn_addr       : in  std_logic_vector(15 downto 0);
+    dn_data       : in  std_logic_vector(7 downto 0);
+    dn_wr         : in  std_logic;
+    dn_index      : in  std_logic_vector(7 downto 0)
   );
 
 end ladybug_rgb;
@@ -67,6 +71,8 @@ architecture rtl of ladybug_rgb is
   signal a_s     : std_logic_vector(5 downto 1);
   signal rgb_s   : std_logic_vector(8 downto 1);
   signal rgb_n_q : std_logic_vector(8 downto 1);
+
+  signal prom_wr : std_logic;
 
 begin
 
@@ -98,12 +104,20 @@ begin
   -----------------------------------------------------------------------------
   -- The RGB Conversion PROM
   -----------------------------------------------------------------------------
-  rgb_prom_b : entity work.prom_10_2
-    port map (
-      CLK    => clk_20mhz_i,
-      ADDR   => a_s,
-      DATA   => rgb_s
-    );
+  
+  prom_wr <= '1' when (dn_wr = '1' and dn_index(7 downto 0) = "00000010" and dn_addr(8 downto 5) = "0001") else '0';
+
+  rgb_prom_b : entity work.dpram generic map(5,8)
+	port map (
+		clock_a   => clk_20mhz_i,
+		address_a => dn_addr(4 downto 0),
+		data_a    => dn_data,
+		wren_a    => prom_wr,
+
+		clock_b   => clk_20mhz_i,
+		address_b => a_s,
+		q_b       => rgb_s
+	);
 
   -----------------------------------------------------------------------------
   -- Process rgb_latch

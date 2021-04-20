@@ -81,7 +81,12 @@ port (
 	sig_o            : out std_logic_vector( 4 downto 1);
 	-- Sprite ROM Interface ---------------------------------------------------
 	rom_sprite_a_o   : out std_logic_vector(11 downto 0);
-	rom_sprite_d_i   : in  std_logic_vector(15 downto 0)
+	rom_sprite_d_i   : in  std_logic_vector(15 downto 0);
+
+	dn_addr           : in  std_logic_vector(15 downto 0);
+	dn_data           : in  std_logic_vector(7 downto 0);
+	dn_wr             : in  std_logic;
+	dn_index          : in  std_logic_vector(7 downto 0)
 );
 
 end ladybug_sprite;
@@ -168,6 +173,9 @@ architecture rtl of ladybug_sprite is
 	signal cr_s            : std_logic_vector( 9 downto 0);
 
 	signal vram_q          : std_logic_vector(15 downto 0);
+
+	signal prom_F4_wr         : std_logic;
+	signal prom_C4_wr         : std_logic;
 
 begin
 
@@ -505,11 +513,18 @@ begin
 	lu_a_s(1)          <= qh2_s;
 	lu_a_s(0)          <= qh1_s;
 
-	prom_F4 : entity work.prom_10_1
+	prom_F4_wr <= '1' when (dn_wr = '1' and dn_index(7 downto 0) = "00000010" and dn_addr(8 downto 5) = "0000") else '0';
+
+	prom_F4 : entity work.dpram generic map(5,8)
 	port map (
-		CLK    => clk_20mhz_i,
-		ADDR   => lu_a_s,
-		DATA   => lu_d_s
+		clock_a   => clk_20mhz_i,
+		address_a => dn_addr(4 downto 0),
+		data_a    => dn_data,
+		wren_a    => prom_F4_wr,
+
+		clock_b   => clk_20mhz_i,
+		address_b => lu_a_s,
+		q_b       => lu_d_s
 	);
 
 	lu_d_mux_s <= lu_d_s(3 downto 0) when cl_q(3) = '0' else lu_d_s(7 downto 4);
@@ -523,13 +538,19 @@ begin
 	ctrl_lu_a_s(3) <= h_i(0);
 	ctrl_lu_a_s(4) <= h_i(1);
 
-	prom_C4 : entity work.prom_10_3
+	prom_C4_wr <= '1' when (dn_wr = '1' and dn_index(7 downto 0) = "00000010" and dn_addr(8 downto 5) = "0010") else '0';
+	prom_C4 : entity work.dpram generic map(5,8)
 	port map (
-		CLK    => clk_20mhz_i,
-		ADDR   => ctrl_lu_a_s,
-		DATA   => ctrl_lu_d_s
-	);
+		clock_a   => clk_20mhz_i,
+		address_a => dn_addr(4 downto 0),
+		data_a    => dn_data,
+		wren_a    => prom_C4_wr,
 
+		clock_b   => clk_20mhz_i,
+		address_b => ctrl_lu_a_s,
+		q_b       => ctrl_lu_d_s
+	);
+	
 	-----------------------------------------------------------------------------
 	-- Process ctrl_lu_seq
 	--
