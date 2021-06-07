@@ -111,7 +111,7 @@ localparam CONF_STR = {
 	"R0,Reset;",
 	"J1,Start 1P,Start 2P,Coin;",
 	"jn,Start,Select,R;",
-	"jp,Start,,Select;",
+	"jp,Start,Select,R;",
 	"V,v",`BUILD_DATE
 };
 /*
@@ -297,8 +297,8 @@ joyonedir jod_2
 wire m_fire    = btn_fire;
 wire m_fire_2  = btn_fire_2;
 
-wire m_start1 = btn_one_player  | joy1[4] | joy2[4];
-wire m_start2 = btn_two_players | joy1[5] | joy2[5];
+wire m_start1 = btn_one_player  | joy1[4];
+wire m_start2 = btn_two_players | joy1[5] | joy2[4];
 wire m_coin   = m_start1 | m_start2 | joy1[6] | joy2[6];
 
 wire hblank, vblank;
