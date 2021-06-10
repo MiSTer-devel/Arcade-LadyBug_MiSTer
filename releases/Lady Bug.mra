@@ -1,14 +1,32 @@
 <misterromdescription>
 	<name>Lady Bug</name>
-	<mameversion>0220</mameversion>
-	<setname>ladybug</setname>
-	<mratimestamp>20200427161917</mratimestamp>
+	<region></region>
+	<homebrew>no</homebrew>
+	<bootleg>no</bootleg>
+	<version></version>
+	<alternative></alternative>
+	<platform></platform>
+	<series></series>
 	<year>1981</year>
 	<manufacturer>Universal</manufacturer>
 	<category>Maze</category>
-	<category>Maze / Bugs</category>
+
+	<setname>ladybug</setname>
+	<parent>ladybug</parent>
+	<mameversion>0220</mameversion>
 	<rbf>ladybug</rbf>
+	<about></about>
+
+	<resolution>15kHz</resolution>
+	<rotation>vertical (ccw)</rotation>
+	<flip>no</flip>
+
+	<players>2 (alternating)</players>
+	<joystick>4-way</joystick>
+	<special_controls></special_controls>
+	<num_buttons>0</num_buttons>
 	<buttons names="-,-,Start 1P,Start 2P,Coin,Pause" default="Start,Select,R,L"/>
+	
 	<switches default="20">
 		<dip bits="7" name="Lives" ids="3,5"/>
 		<dip bits="6" name="Free play" ids="No,Yes"/>
@@ -18,21 +36,23 @@
 		<dip bits="2" name="High Score Initials" ids="10,3"/>
 		<dip bits="0,1" name="Difficulty" ids="Easy,Medium,Hard,Hardest"/>
 	</switches>
+
 	<rom index="1">
 		<part>00</part>
 	</rom>
-	<rom index="0" zip="ladybug.zip" md5="89d961d878363b9859930a3e2c463867">
-		<part crc="d09e0adb" name="l1.c4"/>
-		<part crc="88bc4a0a" name="l2.d4"/>
-		<part crc="53e9efce" name="l3.e4"/>
-		<part crc="ffc424d7" name="l4.h4"/>
-		<part crc="ad6af809" name="l5.j4"/>
-		<part crc="cf1acca4" name="l6.k4"/>
-		<part crc="8b99910b" name="l8.l7"/>
-		<part crc="86a5b448" name="l7.m7"/>
-		<part crc="77b1da1e" name="l9.f7"/>
-		<part crc="aa82e00b" name="l0.h7"/>
-	</rom>
+
+	<rom index="0" md5="89d961d878363b9859930a3e2c463867" zip="ladybug.zip">
+		<part crc="d09e0adb" name="l1.c4"></part>
+		<part crc="88bc4a0a" name="l2.d4"></part>
+		<part crc="53e9efce" name="l3.e4"></part>
+		<part crc="ffc424d7" name="l4.h4"></part>
+		<part crc="ad6af809" name="l5.j4"></part>
+		<part crc="cf1acca4" name="l6.k4"></part>
+		<part crc="8b99910b" name="l8.l7"></part>
+		<part crc="86a5b448" name="l7.m7"></part>
+		<part crc="77b1da1e" name="l9.f7"></part>
+		<part crc="aa82e00b" name="l0.h7"></part>
+		</rom>
 	<rom index="2" zip="ladybug.zip" md5="0a1fac7e0e66624d5cb8836f16da9310">
 		<part crc="40640d8f" name="10-1.f4"/>
 		<part crc="df091e52" name="10-2.k1"/>
@@ -80,5 +100,11 @@
 		00 00 D3 80 00 75 FF FF
 		</part>
 	</rom>
+	<rom index="4"></rom>
+
 	<nvram index="4" size="144"/>
+
+	<remark></remark>
+
+	<mratimestamp>20210430005030</mratimestamp>
 </misterromdescription>
