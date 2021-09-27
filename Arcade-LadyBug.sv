@@ -56,6 +56,7 @@ module emu
 
 	input  [11:0] HDMI_WIDTH,
 	input  [11:0] HDMI_HEIGHT,
+	output        HDMI_FREEZE,
 
 `ifdef MISTER_FB
 	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
@@ -175,27 +176,25 @@ module emu
 
 ///////// Default values for ports not used in this core /////////
 
-assign ADC_BUS  = 'Z;
-assign USER_OUT = '1;
-assign {UART_RTS, UART_TXD, UART_DTR} = 0;
-assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
+assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
+assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 
 assign VGA_F1    = 0;
 assign VGA_SCALER= 0;
-assign AUDIO_MIX = 0;
+assign USER_OUT  = '1;
 assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
-assign BUTTONS = 0;
-
-assign FB_FORCE_BLANK = '0;
+assign BUTTONS   = 0;
+assign AUDIO_MIX = 0;
+assign HDMI_FREEZE = 0;
+assign FB_FORCE_BLANK = 0;
 
 wire [1:0] ar = status[20:19];
 
 assign VIDEO_ARX = (!ar) ? ((status[2] | landscape) ? 8'd4 : 8'd3) : (ar - 1'd1);
 assign VIDEO_ARY = (!ar) ? ((status[2] | landscape) ? 8'd3 : 8'd4) : 12'd0;
-
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -204,6 +203,7 @@ localparam CONF_STR = {
 	"H1H0O2,Orientation,Vert,Horz;",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
+	"H2OR,Autosave Hiscores,Off,On;",
 	"P1,Pause options;",
 	"P1OP,Pause when OSD is open,On,Off;",
 	"P1OQ,Dim video after 10s,On,Off;",
@@ -250,6 +250,7 @@ wire        direct_video;
 
 wire        ioctl_download;
 wire        ioctl_upload;
+wire        ioctl_upload_req;
 wire  [7:0] ioctl_index;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
@@ -261,22 +262,21 @@ wire [15:0] joy1,joy2;
 wire [21:0] gamma_bus;
 
 
-hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
+hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
 
-	.conf_str(CONF_STR),
-
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({landscape,direct_video}),
+	.status_menumask({~hs_configured,landscape,direct_video}),
 	.forced_scandoubler(forced_scandoubler),
 	.gamma_bus(gamma_bus),
 	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_upload(ioctl_upload),
+	.ioctl_upload_req(ioctl_upload_req),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
@@ -430,40 +430,42 @@ ladybug ladybug
 	.pause(pause_cpu),
 
 	.hs_address(hs_address),
-	.hs_data_out(ioctl_din),
+	.hs_data_out(hs_data_out),
 	.hs_data_in(hs_data_in),
-	.hs_write(hs_write),
-	.hs_access(hs_access)
+	.hs_write(hs_write_enable),
+	.hs_access(hs_access_read|hs_access_write)
 );
 
 // HISCORE SYSTEM
 // --------------
-
 wire [15:0]hs_address;
-wire [7:0]hs_data_in;
-wire hs_write;
-wire hs_access;
+wire [7:0] hs_data_in;
+wire [7:0] hs_data_out;
+wire hs_write_enable;
+wire hs_access_read;
+wire hs_access_write;
 wire hs_pause;
+wire hs_configured;
 
 hiscore #(
 	.HS_ADDRESSWIDTH(16),
 	.CFG_ADDRESSWIDTH(3),
 	.CFG_LENGTHWIDTH(2)
 ) hi (
+	.*,
 	.clk(clk_sys),
-	.reset(reset),
-	.ioctl_upload(ioctl_upload),
-	.ioctl_download(ioctl_download),
-	.ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_dout),
-	.ioctl_din(ioctl_din),
-	.ioctl_index(ioctl_index),
+	.paused(pause_cpu),
+	.autosave(status[27]),
 	.ram_address(hs_address),
+	.data_from_ram(hs_data_out),
 	.data_to_ram(hs_data_in),
-	.ram_write(hs_write),
-	.ram_access(hs_access),
-	.pause_cpu(hs_pause)
+	.data_from_hps(ioctl_dout),
+	.data_to_hps(ioctl_din),
+	.ram_write(hs_write_enable),
+	.ram_intent_read(hs_access_read),
+	.ram_intent_write(hs_access_write),
+	.pause_cpu(hs_pause),
+	.configured(hs_configured)
 );
 
 endmodule
