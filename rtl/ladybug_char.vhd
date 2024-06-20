@@ -262,7 +262,7 @@ begin
       d_n_o   => h_ctrl_d_n_out_s
     );
   h_ctrl_rise_s   <= not h_ctrl_s and h_ctrl_d_out_s;
-  h_ctrl_n_rise_s <= h_ctrl_s and not h_ctrl_d_n_out_s;
+  h_ctrl_n_rise_s <= h_ctrl_s and not h_ctrl_d_out_s;
 
 
   -----------------------------------------------------------------------------
@@ -508,8 +508,9 @@ begin
     cpu_write_col_ram_v  := false;
 
     -- detect and decode CPU access
-    if clk_en_4mhz_i = '1' and          -- operate RAMs with CPU clock
-       (not cs13_n_i and select_a_s and not wait_q) = '1' then
+    -- Gating the RAM access here with clk_en_4mhz_i causes very short data output.
+    --if clk_en_4mhz_i = '1' and          -- operate RAMs with CPU clock
+    if (not cs13_n_i and select_a_s and not wait_q) = '1' then
       vec_v := a_i(10) & rd_n_i & wr_n_i;
       case vec_v is
         when "001" =>
